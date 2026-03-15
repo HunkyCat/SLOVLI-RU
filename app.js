@@ -16,6 +16,8 @@
   ];
   const RU_LETTER_RE = /^[А-Я]$/;
   const RU_WORD_RE = /^[А-Я]{5}$/;
+  const DEFAULT_CAT_SRC = "./cat-timer.jpg";
+  const END_CAT_SRC = "./cat-end.jpg";
   const EN_TO_RU_KEY_MAP = {
     Q: "Й", W: "Ц", E: "У", R: "К", T: "Е", Y: "Н", U: "Г", I: "Ш", O: "Щ", P: "З", "[": "Х", "]": "Ъ",
     A: "Ф", S: "Ы", D: "В", F: "А", G: "П", H: "Р", J: "О", K: "Л", L: "Д", ";": "Ж", "'": "Э",
@@ -397,7 +399,24 @@
     shareBtn.disabled = !state.gameOver;
   }
 
+  function syncTimerCatImage() {
+    if (!timerCatImgEl) {
+      return;
+    }
+
+    const targetSrc = state && state.gameOver ? END_CAT_SRC : DEFAULT_CAT_SRC;
+    if (timerCatImgEl.dataset.currentSrc === targetSrc) {
+      return;
+    }
+
+    timerCatImgEl.dataset.currentSrc = targetSrc;
+    timerCatImgEl.dataset.fallbackApplied = "";
+    timerCatImgEl.style.display = "";
+    timerCatImgEl.src = targetSrc;
+  }
+
   function renderAll() {
+    syncTimerCatImage();
     renderMeta();
     renderBoard();
     renderKeyboard();
