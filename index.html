@@ -1,0 +1,50 @@
+﻿<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WORDLY</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <h1>СЛОВЛИ</h1>
+      <p class="subtitle">Угадай русское слово из 5 букв за 6 попыток</p>
+    </header>
+
+    <section class="controls">
+      <div class="mode-switch" role="group" aria-label="Режим игры">
+        <button id="modeDailyBtn" class="mode-btn is-active" type="button">Ежедневно</button>
+        <button id="modeRandomBtn" class="mode-btn" type="button">Случайно</button>
+      </div>
+      <button id="newRandomBtn" class="ghost-btn" type="button">Новое случайное</button>
+      <button id="shareBtn" class="ghost-btn" type="button" disabled>Поделиться</button>
+    </section>
+
+    <section class="meta">
+      <div id="gameInfo" class="chip"></div>
+      <div id="statusText" class="status" aria-live="polite"></div>
+    </section>
+
+    <section class="board-wrap">
+      <div id="board" class="board" aria-label="Игровое поле"></div>
+    </section>
+
+    <section id="keyboard" class="keyboard" aria-label="Экранная клавиатура"></section>
+
+    <section class="stats">
+      <h2>Статистика</h2>
+      <div class="stats-grid">
+        <div><span id="statPlayed">0</span><small>Игр</small></div>
+        <div><span id="statWins">0</span><small>Побед</small></div>
+        <div><span id="statWinrate">0%</span><small>Винрейт</small></div>
+        <div><span id="statStreak">0</span><small>Стрик</small></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./words.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
