@@ -14,7 +14,8 @@ DICT_DIR = ROOT / "dictionaries"
 WORDS_JS = ROOT / "words.js"
 
 WORD_LEN = 5
-MIN_ANSWERS = 3001
+ANSWERS_TARGET = 750
+MIN_ANSWER_PARSE_SCORE = 0.30
 
 RU_RE = re.compile(r"^[а-яё]{5}$")
 BAD_NAME_TAGS = {"Name", "Surn", "Patr", "Geox", "Orgn", "Trad", "Abbr"}
@@ -157,6 +158,17 @@ MANUAL_ANSWER_EXCLUSIONS = {
     "юннат",
     "ямаец",
     "ясырь",
+    "бишоп",
+    "боинг",
+    "хонда",
+    "унтер",
+    "фюрер",
+    "шаттл",
+    "юнкер",
+    "говно",
+    "башка",
+    "телек",
+    "альба",
 }
 
 
@@ -199,7 +211,7 @@ def write_words_js(path: Path, answers_upper: list[str], allowed_upper: list[str
 def main() -> None:
     morph = pymorphy3.MorphAnalyzer()
 
-    # All nominative nouns (sing+plur) for ALLOWED.
+    # All nominative nouns (sing+plur) for ALLOWED fallback generation.
     allowed_freq: dict[str, float] = {}
     # Lemma-level nominative singular nouns for answer base.
     singular_lemma_freq: dict[str, float] = {}
@@ -243,8 +255,14 @@ def main() -> None:
         if w in freq_candidates:
             continue
 
+        parses = morph.parse(word)
+        # If a token is also interpreted as proper-name classes,
+        # keep it out of the answer pool to avoid ambiguous/tricky words.
+        if any(BAD_NAME_TAGS & set(p.tag.grammemes) for p in parses):
+            continue
+
         best_score = 0.0
-        for p in morph.parse(word):
+        for p in parses:
             grams = set(p.tag.grammemes)
             if p.tag.POS != "NOUN":
                 continue
@@ -258,57 +276,54 @@ def main() -> None:
                 continue
             best_score = max(best_score, p.score)
 
-        if best_score >= 0.20:
+        if best_score >= 0.21:
             freq_candidates[w] = (rank, best_score)
 
-    answers = {
-        w
-        for w, (rank, score) in freq_candidates.items()
-        if rank <= 600000 and score >= 0.21
-    }
-
-    # Manual quality patching.
-    for w in MANUAL_ANSWER_ADDITIONS:
-        wn = norm(w)
-        if wn in singular_lemma_freq or (wn in pltm_freq and wn not in singular_lemma_freq):
-            answers.add(wn)
-    answers -= {norm(w) for w in MANUAL_ANSWER_EXCLUSIONS}
-
-    # Safety net: if exclusions reduce too much, top up by frequency.
-    if len(answers) < MIN_ANSWERS:
-        exclusions = {norm(x) for x in MANUAL_ANSWER_EXCLUSIONS}
-        backfill = sorted(
-            (
-                (rank, score, w)
-                for w, (rank, score) in freq_candidates.items()
-                if w not in answers and w not in exclusions
-            ),
-            key=lambda x: (x[0], -x[1], x[2]),
-        )
-        for _rank, _score, w in backfill:
-            answers.add(w)
-            if len(answers) >= MIN_ANSWERS:
-                break
-
-    if len(answers) < MIN_ANSWERS:
-        raise RuntimeError(f"answers dictionary too small: {len(answers)} (need >3000)")
-
-    allowed = set(allowed_freq.keys())
-    # Keep excluded ambiguous words out of ALLOWED too.
-    allowed -= {norm(w) for w in MANUAL_ANSWER_EXCLUSIONS}
-    allowed |= answers
-
-    if len(allowed) <= len(answers):
+    exclusions = {norm(w) for w in MANUAL_ANSWER_EXCLUSIONS}
+    ranked_answers = sorted(
+        (
+            (rank, score, w)
+            for w, (rank, score) in freq_candidates.items()
+            if score >= MIN_ANSWER_PARSE_SCORE and w not in exclusions
+        ),
+        key=lambda x: (x[0], -x[1], x[2]),
+    )
+    if len(ranked_answers) < ANSWERS_TARGET:
         raise RuntimeError(
-            f"allowed dictionary must be wider than answers ({len(allowed)} <= {len(answers)})"
+            f"not enough answer candidates: {len(ranked_answers)} < {ANSWERS_TARGET}"
         )
+    answers = {w for _rank, _score, w in ranked_answers[:ANSWERS_TARGET]}
+
+    # Keep existing allowed dictionary unchanged if it already exists.
+    allowed_path = DICT_DIR / f"allowed_{WORD_LEN}.txt"
+    if allowed_path.exists():
+        allowed_upper = [
+            line.strip().upper()
+            for line in allowed_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    else:
+        allowed = set(allowed_freq.keys())
+        allowed -= exclusions
+        allowed |= answers
+        allowed_upper = to_upper_sorted(allowed)
 
     answers_upper = to_upper_sorted(answers)
-    allowed_upper = to_upper_sorted(allowed)
+
+    if len(answers_upper) != ANSWERS_TARGET:
+        raise RuntimeError(
+            f"answers dictionary size mismatch: {len(answers_upper)} != {ANSWERS_TARGET}"
+        )
+    if len(set(allowed_upper)) <= len(answers_upper):
+        raise RuntimeError(
+            f"allowed dictionary must be wider than answers ({len(set(allowed_upper))} <= {len(answers_upper)})"
+        )
 
     DICT_DIR.mkdir(parents=True, exist_ok=True)
     write_txt(DICT_DIR / f"answers_{WORD_LEN}.txt", answers_upper)
-    write_txt(DICT_DIR / f"allowed_{WORD_LEN}.txt", allowed_upper)
+    # Preserve allowed file if it exists; otherwise create it.
+    if not allowed_path.exists():
+        write_txt(allowed_path, allowed_upper)
     write_words_js(WORDS_JS, answers_upper, allowed_upper)
 
     print(f"answers_{WORD_LEN}.txt: {len(answers_upper)}")
