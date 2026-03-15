@@ -44,6 +44,7 @@
   const solutions = (Array.isArray(window.WORDLY_SOLUTION_WORDS) ? window.WORDLY_SOLUTION_WORDS : [])
     .map(normalizeWord)
     .filter((word) => RU_WORD_RE.test(word));
+  const solutionSet = new Set(solutions);
   const allowed = (Array.isArray(window.WORDLY_ALLOWED_WORDS) ? window.WORDLY_ALLOWED_WORDS : [])
     .map(normalizeWord)
     .filter((word) => RU_WORD_RE.test(word));
@@ -242,8 +243,9 @@
   function loadRandomState(forceNew) {
     if (!forceNew) {
       const raw = loadJson(RANDOM_KEY, null);
-      if (raw && typeof raw.solution === "string" && RU_WORD_RE.test(normalizeWord(raw.solution))) {
-        return sanitizeLoadedState(raw, "random", normalizeWord(raw.solution), null, raw.randomId || null);
+      const normalized = raw && typeof raw.solution === "string" ? normalizeWord(raw.solution) : "";
+      if (raw && RU_WORD_RE.test(normalized) && solutionSet.has(normalized)) {
+        return sanitizeLoadedState(raw, "random", normalized, null, raw.randomId || null);
       }
     }
 
