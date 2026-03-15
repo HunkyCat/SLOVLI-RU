@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WORDLY</title>
+  <title>СЛОВЛИ</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -25,6 +25,23 @@
     <section class="meta">
       <div id="gameInfo" class="chip"></div>
       <div id="statusText" class="status" aria-live="polite"></div>
+    </section>
+
+    <section class="countdown-wrap" aria-live="polite">
+      <div class="kitten-scene">
+        <figure class="kitten-photo-wrap">
+          <img
+            id="timerCatImg"
+            class="kitten-photo"
+            src="./cat-timer.jpg"
+            alt="Котёнок"
+          >
+        </figure>
+        <div class="timer-sign">
+          <div class="timer-title">Новое слово через</div>
+          <div id="dailyCountdown" class="timer-value">--:--:--</div>
+        </div>
+      </div>
     </section>
 
     <section class="board-wrap">

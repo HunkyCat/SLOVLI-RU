@@ -30,6 +30,8 @@
   const modeRandomBtn = document.getElementById("modeRandomBtn");
   const newRandomBtn = document.getElementById("newRandomBtn");
   const shareBtn = document.getElementById("shareBtn");
+  const dailyCountdownEl = document.getElementById("dailyCountdown");
+  const timerCatImgEl = document.getElementById("timerCatImg");
 
   const statPlayedEl = document.getElementById("statPlayed");
   const statWinsEl = document.getElementById("statWins");
@@ -52,10 +54,50 @@
 
   let state = null;
   let toastTimer = null;
+  let countdownIntervalId = null;
 
   function getTodayStampUtc() {
     const now = new Date();
     return Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86400000);
+  }
+
+  function msToNextLocalMidnight() {
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(24, 0, 0, 0);
+    return Math.max(0, next.getTime() - now.getTime());
+  }
+
+  function formatCountdown(ms) {
+    const totalSec = Math.max(0, Math.ceil(ms / 1000));
+    const hh = Math.floor(totalSec / 3600);
+    const mm = Math.floor((totalSec % 3600) / 60);
+    const ss = totalSec % 60;
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+  }
+
+  function updateDailyCountdown() {
+    if (dailyCountdownEl) {
+      dailyCountdownEl.textContent = formatCountdown(msToNextLocalMidnight());
+    }
+
+    if (!state || state.mode !== "daily") {
+      return;
+    }
+
+    const todayStamp = getTodayStampUtc();
+    if (todayStamp !== state.stamp) {
+      startGame("daily", false);
+      setStatus("Новое слово уже доступно", false);
+    }
+  }
+
+  function startCountdownTicker() {
+    if (countdownIntervalId) {
+      clearInterval(countdownIntervalId);
+    }
+    updateDailyCountdown();
+    countdownIntervalId = setInterval(updateDailyCountdown, 1000);
   }
 
   function dailySolution(stamp) {
@@ -552,6 +594,13 @@
     buildBoard();
     buildKeyboard();
     bindEvents();
+    startCountdownTicker();
+
+    if (timerCatImgEl) {
+      timerCatImgEl.addEventListener("error", () => {
+        timerCatImgEl.style.display = "none";
+      });
+    }
 
     const lastMode = localStorage.getItem(LAST_MODE_KEY);
     if (lastMode === "random") {
