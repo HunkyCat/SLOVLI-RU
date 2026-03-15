@@ -56,9 +56,10 @@
   let toastTimer = null;
   let countdownIntervalId = null;
 
-  function getTodayStampUtc() {
+  function getTodayStampLocal() {
     const now = new Date();
-    return Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 86400000);
+    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.floor(localMidnight.getTime() / 86400000);
   }
 
   function msToNextLocalMidnight() {
@@ -85,7 +86,7 @@
       return;
     }
 
-    const todayStamp = getTodayStampUtc();
+    const todayStamp = getTodayStampLocal();
     if (todayStamp !== state.stamp) {
       startGame("daily", false);
       setStatus("Новое слово уже доступно", false);
@@ -224,7 +225,7 @@
   }
 
   function loadDailyState() {
-    const stamp = getTodayStampUtc();
+    const stamp = getTodayStampLocal();
     const solution = dailySolution(stamp);
     const key = stateStorageKey("daily", stamp);
     const raw = loadJson(key, null);
@@ -373,10 +374,13 @@
   function renderKeyboard() {
     const keyState = keyboardStatuses();
     keyboardEl.querySelectorAll(".key").forEach((keyEl) => {
-      keyEl.classList.remove("correct", "present", "absent");
+      keyEl.classList.remove("correct", "present", "absent", "used", "unused");
       const key = keyEl.dataset.key;
       if (RU_LETTER_RE.test(key) && keyState[key]) {
+        keyEl.classList.add("used");
         keyEl.classList.add(keyState[key]);
+      } else if (RU_LETTER_RE.test(key)) {
+        keyEl.classList.add("unused");
       }
       keyEl.disabled = state.gameOver && key !== "ENTER";
     });
@@ -598,6 +602,11 @@
 
     if (timerCatImgEl) {
       timerCatImgEl.addEventListener("error", () => {
+        if (!timerCatImgEl.dataset.fallbackApplied) {
+          timerCatImgEl.dataset.fallbackApplied = "1";
+          timerCatImgEl.src = "./cat-timer-fallback.svg";
+          return;
+        }
         timerCatImgEl.style.display = "none";
       });
     }

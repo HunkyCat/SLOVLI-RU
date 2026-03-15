@@ -264,14 +264,15 @@ body {
   min-width: 32px;
   height: 44px;
   padding: 0 8px;
-  border: 1px solid #45506a;
+  border: 1px solid #4f5c79;
   border-radius: 8px;
-  background: #273044;
-  color: var(--text);
+  background: #273145;
+  color: #ecf2ff;
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
   text-transform: uppercase;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease, transform 0.14s ease;
 }
 
 .key.key-wide {
@@ -279,18 +280,31 @@ body {
 }
 
 .key.correct {
-  background: var(--correct);
-  border-color: var(--correct);
+  background: #2f9a53;
+  border-color: #4ec877;
+  color: #ffffff;
 }
 
 .key.present {
-  background: var(--present);
-  border-color: var(--present);
+  background: #c89221;
+  border-color: #f3bf4d;
+  color: #ffffff;
 }
 
 .key.absent {
-  background: var(--absent);
-  border-color: var(--absent);
+  background: #161a22;
+  border-color: #323949;
+  color: #7f889b;
+}
+
+.key.used {
+  box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.08);
+}
+
+.key.unused {
+  background: #273145;
+  border-color: #4f5c79;
+  color: #eaf0ff;
 }
 
 .stats {
